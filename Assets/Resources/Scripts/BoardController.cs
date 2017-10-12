@@ -22,23 +22,24 @@ public class BoardController : MonoBehaviour
     [Header("Ring images for back and front")]
     [SerializeField] RingsImages[] m_RingsImages;
 
-    const int NumberOfPins = 3; //nr of pins does not change
+    private int _mNumberOfPins = 3; //nr of pins does not change
+    private GameObject[] _mPins;
+    private GameObject[] _mRings;
 
-    private GameObject[] m_Pins;
-    private GameObject[] m_Rings;
+    public GameObject[] Pins { get { return _mPins; } }
+    public GameObject[] Rings { get { return _mRings; } }
+    public int NumberOfRings { get { return m_NumberOfRings; } }
+    public int NumberOfPins { get { return _mNumberOfPins; } }
 
-    public GameObject[] Pins { get { return m_Pins; } }
-    public GameObject[] Rings { get { return m_Rings; } }
-
-    private void Start()
+    private void OnEnable()
     {
-        m_Pins = new GameObject[NumberOfPins];
-        m_Rings = new GameObject[m_NumberOfRings];
+        _mPins = new GameObject[_mNumberOfPins];
+        _mRings = new GameObject[m_NumberOfRings];
 
-        m_Pins = PinInstantions();
-        SetPinsPosition(m_Pins, m_PinDistanceX, m_PinPositionY);
+        _mPins = PinInstantions();
+        SetPinsPosition(_mPins, m_PinDistanceX, m_PinPositionY);
 
-        m_Rings = InstantiateRings();
+        _mRings = InstantiateRings();
         SetInitialRingsPosition(0);
     }
 
@@ -55,6 +56,7 @@ public class BoardController : MonoBehaviour
             for (int i = 0; i < NumberOfPins; i++)
             {
                 pins[i] = Instantiate(m_PinPrefab, m_PinParent.transform);
+                pins[i].name = string.Format("P{0}", i);
             }
         }
         else
@@ -97,7 +99,8 @@ public class BoardController : MonoBehaviour
             for (int i = m_NumberOfRings-1; i > -1; i--)
             {
                 rings[i] = Instantiate(m_RingPrefab, m_PinParent.transform);
-                rings[i].name = string.Format("Ring{0}", i);
+                rings[i].name = string.Format("R{0}", i);
+                rings[i].GetComponent<RingBackRefference>().RingBackObject.name = string.Format("RB{0}", i);
                 rings[i].transform.SetAsLastSibling();
                 Image imageFront = rings[i].GetComponent<Image>();
                 Image imageBack = rings[i].transform.GetChild(0).GetComponent<Image>();
@@ -123,16 +126,15 @@ public class BoardController : MonoBehaviour
     {
         for (int i=0; i<m_NumberOfRings; i++)
         {
-            RectTransform ringTransform = (RectTransform) m_Rings[i].transform;
+            RectTransform ringTransform = (RectTransform) _mRings[i].transform;
             float sizeY = ringTransform.rect.height - m_RingsHeightOffset;
             float positionY = m_BaseRingPosY + (sizeY * (m_NumberOfRings-1-i));
-            Vector2 position = new Vector2(m_Pins[pinIndex].transform.localPosition.x, positionY);
-            m_Rings[i].transform.localPosition = position;
+            Vector2 position = new Vector2(_mPins[pinIndex].transform.localPosition.x, positionY);
+            _mRings[i].transform.localPosition = position;
+            Transform back = _mRings[i].GetComponent<RingBackRefference>().RingBackObject.transform;
+            back.SetParent(m_PinParent.transform);
+            back.SetAsFirstSibling();
         }
-
-        Transform back = m_Rings[0].transform.GetChild(0);
-        back.transform.SetParent(m_PinParent.transform);
-        back.transform.SetAsFirstSibling();
     }
 }
 

@@ -4,5 +4,8 @@ using UnityEngine;
 
 public class RingBackRefference : MonoBehaviour {
 
-	[SerializeField] private GameObject m_RingBackObject;
+    public GameObject m_Refference;
+
+    public GameObject RingBackObject { get { return m_Refference; } }
+
 }
