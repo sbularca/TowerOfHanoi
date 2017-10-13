@@ -1,0 +1,15 @@
+﻿<Properties StartupConfiguration="{BD887774-992E-04DA-E530-3418ECDF2FAC}|">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scripts/GameController.cs">
+    <Files>
+      <File FileName="Assets/Scripts/GameController.cs" Line="6" Column="11" />
+      <File FileName="Assets/Fabric/Kits/Crashlytics/Runtime/Crashlytics.cs" Line="7" Column="15" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+  <MultiItemStartupConfigurations />
+  <MonoDevelop.Ide.ItemProperties.TowerOfHanoi PreferredExecutionTarget="Unity.Editor" />
+</Properties>
