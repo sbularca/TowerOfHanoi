@@ -12,26 +12,26 @@ MonoBehaviour:
   m_Name: FabricSettings
   m_EditorClassIdentifier: 
   email: sebastian.bularca@gmail.com
-  rawToken: '{"access_token":"248f25ae44b6da85bd5f5165e13dee3049a00878f578fe8be3a619562295e11f","refresh_token":"a4df6e8262e0d936ebf66bea5a72d2d47904a57a9b4e8f9f0667e71823ef50a8","token_type":"bearer","expires_in":86400}'
+  rawToken: '{"access_token":"a200e8e26ff470e7ec81fdeff20a14d919c8de79fdcb895f45cb0d8e9b44cd66","refresh_token":"bbc84146ef17c166a2eee1557cc897980ea335991185220aa64dd6d4aaafbd6c","token_type":"bearer","expires_in":86400}'
   organization:
     Name: Jovian Industries
     Id: 59dd13d1226da0cb41000015
     ApiKey: 8ec85e65b66a75a8dd8ea36c87750be77fcb9e6d
     BuildSecret: ea42f4c0cf3546eec122a787dcc412c1d0de498c0a0a6a4e9726b713d313c629
-  iconUrl: 
-  dashboardUrl: 
+  iconUrl: https://cdn-cf.fabric.io/assets/v1/icons/app_icon57_default_white-98fe1117611dadee6a1fac112b1dda77.png
+  dashboardUrl: https://www.fabric.io/jovian-industries/android/apps/com.jovianindustries.towersofhanoi
   initialization: 0
   flowSequence: 0
   conflict: 
   kit: 
   installedKits:
   - Name: Crashlytics
-    InstallationStatus: 1
-    Installed: 0
+    InstallationStatus: 2
+    Installed: 1
     Enabled: 1
     Meta:
     - Key: ConfiguredTimestamp
-      Value: 1507896062
+      Value: 1507911218
       Platform: 
     - Key: Dependencies
       Value: '[{"name":"Crashlytics-Android","version":"2.6.8"},{"name":"Crashlytics-Core-Android","version":"2.3.17"},{"name":"Fabric-Android","version":"1.3.17"},{"name":"Answers-Android","version":"1.3.13"},{"name":"Beta-Android","version":"1.2.5"},{"name":"Crashlytics-iOS","version":"3.8.3"},{"name":"Crashlytics-Wrapper-iOS","version":"0.0.0"},{"name":"Crashlytics-Wrapper-Android","version":"0.0.0"}]'

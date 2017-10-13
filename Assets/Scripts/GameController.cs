@@ -4,6 +4,7 @@ using System;
 using UnityEngine;
 using System.Linq;
 using Fabric.Crashlytics;
+using System.Diagnostics;
 
 public class GameController : MonoBehaviour
 {
@@ -29,15 +30,13 @@ public class GameController : MonoBehaviour
         _mRings = _mBoardController.Rings;
 
         EventsManager.Events.AddListener("OnBoardInitialSetup", OnBoardInitialSetup);
-
-        Crashlytics.Crash();
     }
 
     private void OnBoardInitialSetup(params object[]args)
     {
         BoardSetsHolder.Add(new Sets{m_Pin = _mPins[0], m_Rings = _mRings.ToList()});
 
-        Debug.Log(string.Format("The pin {0} contains a number of {1} rings", BoardSetsHolder[0].m_Pin.name, BoardSetsHolder[0].m_Rings.Count())); 
+        UnityEngine.Debug.Log(string.Format("The pin {0} contains a number of {1} rings", BoardSetsHolder[0].m_Pin.name, BoardSetsHolder[0].m_Rings.Count())); 
     }
 
     /// <summary>
@@ -53,9 +52,18 @@ public class GameController : MonoBehaviour
         if (objArray.Any(o => o.name == obj.name))
             index = Array.IndexOf(objArray, obj);
         else
-            Debug.Log("There is no element in the array with the name" + obj.name);
+            UnityEngine.Debug.Log("There is no element in the array with the name" + obj.name);
 
         return index;
+    }
+
+    public void CrashMe()
+    {
+       StackFrame fr = new StackFrame(1, true);
+        StackTrace st = new StackTrace(fr);
+        Crashlytics.ThrowNonFatal();
+        Crashlytics.RecordCustomException("NotSoGood Exception", "I have no clue what just happened", st);
+        Crashlytics.Log("Non Fatal Just Happened");
     }
 }
 
