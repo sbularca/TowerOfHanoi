@@ -4,15 +4,19 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
 
+/// <summary>
+/// Class that takes care of the setup and the reseting of the board
+/// </summary>
 public class BoardController : MonoBehaviour
 {
 
     [Header("Board Variables")]
-    [SerializeField] float m_PinDistanceX; //distance between pins
+    [SerializeField]
+    float m_PinDistanceX; //distance between pins
     [SerializeField] float m_PinPositionY; //base Y position on the pins
-    [SerializeField] float m_BaseRingPosY; //base Y position for the first ring
     [SerializeField] float m_RingsHeightOffset; //offset for the distance between pins pivots
     [SerializeField] int m_NumberOfRings; //in case less discs are used which the current setup supports
+    [SerializeField] int m_StartingPin = 0; //the starting pin can be changed
 
     [Header("Board Elements")]
     [SerializeField] GameObject m_PinPrefab;
@@ -22,30 +26,38 @@ public class BoardController : MonoBehaviour
     [Header("Ring images for back and front")]
     [SerializeField] RingsImages[] m_RingsImages;
 
+    public static BoardController Instance;
+
     private int _mNumberOfPins = 3; //nr of pins is predefined
+    private GameObject _mCurrentPin;
     private GameObject[] _mPins;
     private GameObject[] _mRings;
 
-    public GameObject[] Pins { get { return _mPins; } }
     public GameObject[] Rings { get { return _mRings; } }
-    public int NumberOfRings { get { return m_NumberOfRings; } }
+    public GameObject[] Pins { get { return _mPins; } }
     public int NumberOfPins { get { return _mNumberOfPins; } }
+    public int NumberOfRings { get { return m_NumberOfRings; } }
+    public float RingHeightOffset { get { return m_RingsHeightOffset; } }
+    public GameObject PinParent { get { return m_PinParent; } }
+    public GameObject StartingPin { get { return _mPins[m_StartingPin]; } }
 
-    private void OnEnable()
+    private void Awake()
     {
-        
-
+        Instance = this;
     }
 
     private void Start()
     {
-		_mPins = new GameObject[_mNumberOfPins];
-		_mRings = new GameObject[m_NumberOfRings];
+        _mPins = new GameObject[NumberOfPins];
+        _mRings = new GameObject[m_NumberOfRings];
+        _mPins = PinInstantions();
+        _mRings = InstantiateRings();
+        _mCurrentPin = _mPins[m_StartingPin];
 
-		_mPins = PinInstantions();
-		_mRings = InstantiateRings();
         SetPinsPosition(_mPins, m_PinDistanceX, m_PinPositionY);
-        SetInitialRingsPosition(0);
+        SetInitialRingsPosition(_mCurrentPin);
+
+        EventsManager.Events.PostNotification("OnBoardSetup", _mCurrentPin);
     }
 
     /// <summary>
@@ -69,14 +81,15 @@ public class BoardController : MonoBehaviour
 
         return pins;
     }
-    
+
     /// <summary>
-    /// Positions the pins on the board
+    /// Positions the pins on the board. Since the number of pins is predifined, the method is hardcoding the position.
+    /// It can be easily generalized
     /// </summary>
     /// <param name="pins">The pins array</param>
     /// <param name="distBetweenPins">The distance between pins</param>
     /// <param name="positionY">Position on Y axis</param>
-    private void SetPinsPosition(GameObject [] pins, float distBetweenPins, float positionY)
+    private void SetPinsPosition(GameObject[] pins, float distBetweenPins, float positionY)
     {
         Vector2 pin0 = new Vector3(-distBetweenPins, positionY);
         Vector2 pin1 = new Vector3(0, positionY);
@@ -87,7 +100,8 @@ public class BoardController : MonoBehaviour
             pins[0].transform.localPosition = pin0;
             pins[1].transform.localPosition = pin1;
             pins[2].transform.localPosition = pin2;
-        } else
+        }
+        else
             Debug.LogError("Not all pins have been instantiated");
     }
 
@@ -101,7 +115,7 @@ public class BoardController : MonoBehaviour
 
         if (m_RingPrefab != null && m_PinParent != null)
         {
-            for (int i = m_NumberOfRings-1; i > -1; i--)
+            for (int i = m_NumberOfRings - 1; i > -1; i--)
             {
                 rings[i] = Instantiate(m_RingPrefab, m_PinParent.transform);
                 rings[i].name = string.Format("R{0}", i);
@@ -126,22 +140,45 @@ public class BoardController : MonoBehaviour
     /// <summary>
     /// Sets the starting positions for the rings
     /// </summary>
-    /// <param name="pinIndex">The pin for the starting position</param>
-    public void SetInitialRingsPosition(int pinIndex)
+    /// <param name="pin">The pin for the starting position</param>
+    private void SetInitialRingsPosition(GameObject pin)
     {
-        for (int i=0; i<m_NumberOfRings; i++)
+        RectTransform pinTransform = (RectTransform)pin.transform;
+
+        for (int i = 0; i < m_NumberOfRings; i++)
         {
-            RectTransform ringTransform = (RectTransform) _mRings[i].transform;
+            _mRings[i].transform.SetParent(PinParent.transform);
+            RectTransform ringTransform = (RectTransform)_mRings[i].transform;
             float sizeY = ringTransform.rect.height - m_RingsHeightOffset;
-            float positionY = m_BaseRingPosY + (sizeY * (m_NumberOfRings-1-i));
-            Vector2 position = new Vector2(_mPins[pinIndex].transform.localPosition.x, positionY);
+            float positionY = (pinTransform.localPosition.y + (sizeY * (m_NumberOfRings - 1 - i))) - m_RingsHeightOffset + ringTransform.rect.height / 2;
+            Vector2 position = new Vector2(pinTransform.localPosition.x, positionY);
             _mRings[i].transform.localPosition = position;
             Transform back = _mRings[i].GetComponent<RingBackRefference>().RingBackObject.transform;
             back.SetParent(m_PinParent.transform);
             back.SetAsFirstSibling();
         }
+    }
 
-        EventsManager.Events.PostNotification("OnBoardInitialSetup");
+    /// <summary>
+    /// UI accessed method to reset the board
+    /// </summary>
+    public void ResetBoard()
+    {
+        foreach (GameObject ring in _mRings)
+        {
+            if (ring != null)
+            {
+                Destroy(ring);
+                Destroy(ring.GetComponent<RingBackRefference>().RingBackObject);
+            }
+
+        }
+
+        _mRings = InstantiateRings();
+
+        SetInitialRingsPosition(_mCurrentPin);
+
+        EventsManager.Events.PostNotification("OnBoardSetup", _mCurrentPin);
     }
 }
 

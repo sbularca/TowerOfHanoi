@@ -1,18 +1,16 @@
-﻿/*---------------------------------------------------------------------------------------------
- *  Origin: Unity, from Standard Assets adapted to the current conditions
- *  Description: Drag Script - to be added on the dragged objects
- *--------------------------------------------------------------------------------------------*/
-
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
+/// <summary>
+/// Origin: Unity, from Standard Assets adapted to the current conditions
+/// Drag class to be added on the dragged objects
+/// </summary>
 public class RingDrag : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerEnterHandler, IPointerExitHandler
 {
-    public bool dragOnSurfaces = false;
-
+    private bool dragOnSurfaces = false;
     private BoardController _mBoardController;
     private GameController _mGameController;
     private GameObject _mRingBackObject;
@@ -20,84 +18,107 @@ public class RingDrag : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
     private Dictionary<int, RectTransform> _mDraggingPlanes = new Dictionary<int, RectTransform>();
     private GameObject _mPointerIdObject;
     private GameObject _mCanvas;
+    private GameObject _mStartingPin;
     private Animator _mAnimator;
     private Animator _mBackAnimator;
     private Vector3 _mFrontInitialPosition;
     private Vector3 _mBackInitialPosition;
     private Transform _mInitialParent;
-    private int index;
+    private bool _mIsDragged = false;
+    private bool _mIsOverPin = false;
+    private bool _mCanBePicked = true;
+
 
     void Start()
     {
-        _mBoardController = GameObject.FindGameObjectWithTag("GameController").GetComponent<BoardController>();
         _mCanvas = GameObject.FindGameObjectWithTag("MainCanvas");
-        _mRingBackObject = GetComponent<RingBackRefference>().RingBackObject;
         _mAnimator = GetComponent<Animator>();
+        _mRingBackObject = GetComponent<RingBackRefference>().RingBackObject;
         _mBackAnimator = _mRingBackObject.GetComponent<Animator>();
-        
+        EventsManager.Events.AddListener("IsOverPin", IsOverPin);
     }
 
-    public void OnPointerEnter(PointerEventData eventData) { }
-	
-    public void OnPointerExit(PointerEventData eventData) { }
-
-
-    public void OnBeginDrag(PointerEventData eventData)
+    public void OnPointerEnter(PointerEventData eventData)
     {
-        if (_mCanvas == null)
-            return;
-        _mFrontInitialPosition = transform.position;
-        _mBackInitialPosition = _mRingBackObject.transform.position;
-        _mInitialParent = transform.parent;
-        _mDraggingIcons[eventData.pointerId] = this.gameObject;
-        _mRingBackObject.transform.SetParent(this.gameObject.transform);
-        _mDraggingIcons[eventData.pointerId].transform.SetParent(_mCanvas.transform, false);
-        _mDraggingIcons[eventData.pointerId].transform.SetAsLastSibling();
-        _mAnimator.SetBool("onDrag", true);
-        _mBackAnimator.SetBool("onDrag", true);
+        _mCanBePicked= GameController.Instance.CanBePicked(gameObject);
+        if (_mCanBePicked)
+        {
+            _mAnimator.SetBool("onDrag", true);
+            _mBackAnimator.SetBool("onDrag", true);            
+        }
 
-        var group = _mDraggingIcons[eventData.pointerId].AddComponent<CanvasGroup>();
-        group.blocksRaycasts = false;
+    }
 
-        if (dragOnSurfaces)
-            _mDraggingPlanes[eventData.pointerId] = transform as RectTransform;
-        else
-            _mDraggingPlanes[eventData.pointerId] = _mCanvas.transform as RectTransform;
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        _mAnimator.SetBool("onDrag", false);
+        _mBackAnimator.SetBool("onDrag", false);
+    }
 
-        SetDraggedPosition(eventData);
-        EventsManager.Events.PostNotification("OnBeginDragObject", _mPointerIdObject);
+
+    public void OnBeginDrag(PointerEventData eventData)    {
+
+        if (!_mIsDragged && _mCanBePicked)
+        {
+            if (_mCanvas == null)
+                return;
+            _mStartingPin = GameController.Instance.GetStartingPin(gameObject);
+            _mFrontInitialPosition = gameObject.transform.position;
+            _mInitialParent = transform.parent;
+            _mDraggingIcons[eventData.pointerId] = gameObject;
+            _mRingBackObject.transform.SetParent(gameObject.transform);
+            _mBackInitialPosition = _mRingBackObject.transform.position;
+            _mDraggingIcons[eventData.pointerId].transform.SetParent(_mCanvas.transform, false);
+            _mDraggingIcons[eventData.pointerId].transform.SetAsLastSibling();
+            _mAnimator.SetBool("onDrag", true);
+            _mBackAnimator.SetBool("onDrag", true);
+
+            var group = _mDraggingIcons[eventData.pointerId].AddComponent<CanvasGroup>();
+            group.blocksRaycasts = false;
+
+            if (dragOnSurfaces)
+                _mDraggingPlanes[eventData.pointerId] = transform as RectTransform;
+            else
+                _mDraggingPlanes[eventData.pointerId] = _mCanvas.transform as RectTransform;
+
+            SetDraggedPosition(eventData);
+            GameController.Instance.UpdateRingPosition(gameObject, null);
+            _mIsDragged = true;
+            GameController.Instance.OneRingIsDragged = true;
+
+
+            EventsManager.Events.PostNotification("OnBeginDragObject", _mPointerIdObject);
+
+        }
+
     }
 
     public void OnDrag(PointerEventData eventData)
     {
-        _mPointerIdObject = _mDraggingIcons[eventData.pointerId];
-
-        if (_mPointerIdObject != null)
+        if (_mIsDragged)
         {
-            SetDraggedPosition(eventData);
+            _mPointerIdObject = _mDraggingIcons[eventData.pointerId];
+
+            if (_mPointerIdObject != null)
+            {
+                SetDraggedPosition(eventData);
+            }
         }
+
     }
 
-    public void OnEndDrag (PointerEventData eventData)
+    public void OnEndDrag(PointerEventData eventData)
     {
-        _mAnimator.SetBool("onDrag", false);
-        _mBackAnimator.SetBool("onDrag", false);
-        transform.position = _mFrontInitialPosition;
-        transform.SetParent(_mInitialParent);
-        _mRingBackObject.transform.position = _mBackInitialPosition;
-
-        _mRingBackObject.transform.SetParent(transform.parent);
-        _mRingBackObject.transform.SetAsFirstSibling();
-
-        _mDraggingIcons.Clear();
-        _mDraggingPlanes.Clear();
-        Destroy(GetComponent<CanvasGroup>());
-
-        EventsManager.Events.PostNotification("OnEndDragObject");
-        _mPointerIdObject = null;        
+        if (_mIsDragged && !_mIsOverPin)
+            SetInitialPosition();
+        else
+            ConfirmPosition();
     }
 
-
+    /// <summary>
+    /// Sets the position of the object while dragging
+    /// </summary>
+    /// <param name="eventData"></param>
     private void SetDraggedPosition(PointerEventData eventData)
     {
         if (dragOnSurfaces && eventData.pointerEnter != null && eventData.pointerEnter.transform as RectTransform != null)
@@ -116,6 +137,56 @@ public class RingDrag : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
         }
 
         _mPointerIdObject = _mDraggingIcons[eventData.pointerId];
+    }
+
+    /// <summary>
+    /// Event method to check if this ring is over a pin
+    /// </summary>
+    /// <param name="args"></param>
+    private void IsOverPin(params object[] args)
+    {
+        _mIsOverPin = (bool)args[0];
+    }
+
+    /// <summary>
+    /// Sets the original position if the ring dragging is canceled 
+    /// </summary>
+    private void SetInitialPosition()
+    {
+        _mAnimator.SetBool("onDrag", false);
+        _mBackAnimator.SetBool("onDrag", false);
+        transform.position = _mFrontInitialPosition;
+        transform.SetParent(_mInitialParent);
+        _mRingBackObject.transform.position = _mBackInitialPosition;
+
+        _mRingBackObject.transform.SetParent(transform.parent);
+        _mRingBackObject.transform.SetAsFirstSibling();
+
+        EventsManager.Events.PostNotification("OnCancelDragObject", gameObject, _mStartingPin);
+
+        _mPointerIdObject = null;
+        _mIsDragged = false;
+        GameController.Instance.OneRingIsDragged = false;
+        _mDraggingIcons.Clear();
+        _mDraggingPlanes.Clear();
+        Destroy(GetComponent<CanvasGroup>());
+    }
+
+    /// <summary>
+    /// Clears the status of the ring if the ring has been positioned on a pin
+    /// </summary>
+    private void ConfirmPosition()
+    {
+        _mAnimator.SetBool("onDrag", false);
+        _mBackAnimator.SetBool("onDrag", false);
+
+        _mPointerIdObject = null;
+        _mIsDragged = false;
+        GameController.Instance.OneRingIsDragged = false;
+        _mIsOverPin = false;
+        _mDraggingIcons.Clear();
+        _mDraggingPlanes.Clear();
+        Destroy(GetComponent<CanvasGroup>());
     }
 
 }

@@ -1,12 +1,11 @@
-﻿/*---------------------------------------------------------------------------------------------
- *  Author: Unknown. Script improved by me to support multiple number and types of arguments
- *	Description: Events manager Singleton that uses Unity embeded EventSystem to post and receive
- *               events
- *--------------------------------------------------------------------------------------------*/
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Events;
 using System.Collections.Generic;
 
+/// <summary>
+/// Author unknown. Script improved by me to support multiple number and types of arguments
+/// Events manager Singleton that uses Unity embeded EventSystem to post and receive events
+/// </summary>
 public class EventsManager : MonoBehaviour
 {
     public static EventsManager Events = null;
@@ -19,6 +18,7 @@ public class EventsManager : MonoBehaviour
             Events = this;
         else if (Events != this)
             Destroy(gameObject);
+
         DontDestroyOnLoad(gameObject);
     }
 
@@ -30,15 +30,18 @@ public class EventsManager : MonoBehaviour
     public void AddListener(string eventName, UnityAction<object[]> listener)
     {
         UnityEvent1 thisEvent = null;
+
         if (Listeners.TryGetValue(eventName, out thisEvent))
         {
             thisEvent.AddListener(listener);
+            //Debug.Log("Listener to event " + eventName + " added");
         }
         else
         {
             thisEvent = new UnityEvent1();
             thisEvent.AddListener(listener);
             Listeners.Add(eventName, thisEvent);
+            //Debug.Log("The new event " + eventName + " added");
         }
     }
 
@@ -69,11 +72,12 @@ public class EventsManager : MonoBehaviour
             if (Listeners.TryGetValue(eventName, out thisEvent))
             {
                 thisEvent.Invoke(args);
+                //Debug.Log("Event " + eventName + " invoked");
             }
         }
         else
         {
-           // Debug.LogAssertion("The EventManager 'eventname' was null or empty");
+            //Debug.Log("Event " + eventName + " was null or empty");
         }
 
     }
