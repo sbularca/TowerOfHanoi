@@ -24,8 +24,6 @@ public class RingDrag : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
     private Vector3 _mFrontInitialPosition;
     private Vector3 _mBackInitialPosition;
     private Transform _mInitialParent;
-    private bool _mIsDragged = false;
-    private bool _mIsOverPin = false;
     private bool _mCanBePicked = true;
 
 
@@ -35,18 +33,19 @@ public class RingDrag : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
         _mAnimator = GetComponent<Animator>();
         _mRingBackObject = GetComponent<RingBackRefference>().RingBackObject;
         _mBackAnimator = _mRingBackObject.GetComponent<Animator>();
-        EventsManager.Events.AddListener("IsOverPin", IsOverPin);
     }
+
+
 
     public void OnPointerEnter(PointerEventData eventData)
     {
         _mCanBePicked= GameController.Instance.CanBePicked(gameObject);
+
         if (_mCanBePicked)
         {
             _mAnimator.SetBool("onDrag", true);
             _mBackAnimator.SetBool("onDrag", true);            
         }
-
     }
 
     public void OnPointerExit(PointerEventData eventData)
@@ -58,10 +57,11 @@ public class RingDrag : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
 
     public void OnBeginDrag(PointerEventData eventData)    {
 
-        if (!_mIsDragged && _mCanBePicked)
+        if (!GameController.Instance.OneRingIsDragged && _mCanBePicked)
         {
             if (_mCanvas == null)
                 return;
+
             _mStartingPin = GameController.Instance.GetStartingPin(gameObject);
             _mFrontInitialPosition = gameObject.transform.position;
             _mInitialParent = transform.parent;
@@ -83,19 +83,15 @@ public class RingDrag : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
 
             SetDraggedPosition(eventData);
             GameController.Instance.UpdateRingPosition(gameObject, null);
-            _mIsDragged = true;
             GameController.Instance.OneRingIsDragged = true;
-
-
-            EventsManager.Events.PostNotification("OnBeginDragObject", _mPointerIdObject);
-
+            GameController.Instance.PointerData = _mPointerIdObject;
+            GameController.Instance.DisableRaycastOnRings();
         }
-
     }
 
     public void OnDrag(PointerEventData eventData)
     {
-        if (_mIsDragged)
+        if (GameController.Instance.OneRingIsDragged)
         {
             _mPointerIdObject = _mDraggingIcons[eventData.pointerId];
 
@@ -109,10 +105,13 @@ public class RingDrag : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        if (_mIsDragged && !_mIsOverPin)
+        if (GameController.Instance.OneRingIsDragged && !GameController.Instance.IsOverPin)
             SetInitialPosition();
         else
             ConfirmPosition();
+
+        GameController.Instance.PointerData = null;
+        EventsManager.Events.PostNotification("OnEndDragObject");
     }
 
     /// <summary>
@@ -139,14 +138,6 @@ public class RingDrag : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
         _mPointerIdObject = _mDraggingIcons[eventData.pointerId];
     }
 
-    /// <summary>
-    /// Event method to check if this ring is over a pin
-    /// </summary>
-    /// <param name="args"></param>
-    private void IsOverPin(params object[] args)
-    {
-        _mIsOverPin = (bool)args[0];
-    }
 
     /// <summary>
     /// Sets the original position if the ring dragging is canceled 
@@ -158,18 +149,13 @@ public class RingDrag : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
         transform.position = _mFrontInitialPosition;
         transform.SetParent(_mInitialParent);
         _mRingBackObject.transform.position = _mBackInitialPosition;
-
         _mRingBackObject.transform.SetParent(transform.parent);
         _mRingBackObject.transform.SetAsFirstSibling();
-
-        EventsManager.Events.PostNotification("OnCancelDragObject", gameObject, _mStartingPin);
-
         _mPointerIdObject = null;
-        _mIsDragged = false;
-        GameController.Instance.OneRingIsDragged = false;
         _mDraggingIcons.Clear();
         _mDraggingPlanes.Clear();
         Destroy(GetComponent<CanvasGroup>());
+        EventsManager.Events.PostNotification("OnCancelDragObject", gameObject, _mStartingPin);
     }
 
     /// <summary>
@@ -179,11 +165,7 @@ public class RingDrag : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
     {
         _mAnimator.SetBool("onDrag", false);
         _mBackAnimator.SetBool("onDrag", false);
-
         _mPointerIdObject = null;
-        _mIsDragged = false;
-        GameController.Instance.OneRingIsDragged = false;
-        _mIsOverPin = false;
         _mDraggingIcons.Clear();
         _mDraggingPlanes.Clear();
         Destroy(GetComponent<CanvasGroup>());

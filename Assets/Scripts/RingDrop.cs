@@ -10,14 +10,7 @@ using UnityEngine.EventSystems;
 public class RingDrop : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler
 {
     private Animator _mAnimator;
-    private bool _mPointerHasData = false;
-    private GameObject _mDraggedObject;
     private bool canBePositioned = true;
-
-    private void OnEnable()
-    {
-        EventsManager.Events.AddListener("OnBeginDragObject", OnBeginDragObject);
-    }
 
     private void Start()
     {
@@ -27,21 +20,22 @@ public class RingDrop : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
     public void OnPointerDown(PointerEventData eventData) { }
 
 
-    public void OnPointerEnter(PointerEventData eventData)    {
-
-        if (_mPointerHasData)
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (PointerHasData())
         {
-            canBePositioned = GameController.Instance.CanBePositioned(_mDraggedObject, gameObject);
+            EventsManager.Events.AddListener("OnEndDragObject", OnEndDragObject);
+            canBePositioned = GameController.Instance.CanBePositioned(GameController.Instance.PointerData, gameObject);
 
             if (canBePositioned)
             {
                 _mAnimator.SetBool("pinGreen", true);
-                EventsManager.Events.PostNotification("IsOverPin", true);
+                GameController.Instance.IsOverPin = true;
             } else
             {
                 _mAnimator.SetBool("pinRed", true);
+                GameController.Instance.IsOverPin = false;
             }
-
         }
     }
 
@@ -49,37 +43,39 @@ public class RingDrop : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
     {
         _mAnimator.SetBool("pinGreen", false);
         _mAnimator.SetBool("pinRed", false);
-        EventsManager.Events.PostNotification("IsOverPin", false);
+        GameController.Instance.IsOverPin = false;
         canBePositioned = true;
+        EventsManager.Events.RemoveListener("OnEndDragObject", OnEndDragObject);
     }
 
 
     public void OnDrop(PointerEventData eventData)
     {
-        GameController.Instance.UpdateRingPosition(_mDraggedObject, gameObject);
-        PositionRing(_mDraggedObject);
-        EventsManager.Events.PostNotification("CheckGameOver");
-        _mDraggedObject = null;
-        _mPointerHasData = false;
-        _mAnimator.SetBool("pinGreen", false);
-        _mAnimator.SetBool("pinRed", false);
-
-    }
-
-    /// <summary>
-    /// Event method that sends the dragged object to the pins
-    /// </summary>
-    /// <param name="args"></param>
-    private void OnBeginDragObject(params object[] args)
-    {
-        _mDraggedObject = args[0] as GameObject;
-        if (_mDraggedObject != null)
+        if (GameController.Instance.IsOverPin && GameController.Instance.OneRingIsDragged)
         {
-            _mPointerHasData = true;
+            GameController.Instance.UpdateRingPosition(GameController.Instance.PointerData, gameObject);
+            PositionRing(GameController.Instance.PointerData);
+            EventsManager.Events.PostNotification("CheckGameOver");
+            _mAnimator.SetBool("pinGreen", false);
+            _mAnimator.SetBool("pinRed", false);
+            GameController.Instance.PointerData = null;
         }
-            
+
     }
 
+    private void OnEndDragObject(params object[]args)
+    {
+        GameController.Instance.IsOverPin = false;
+        GameController.Instance.OneRingIsDragged = false;
+    }
+
+    private bool PointerHasData()
+    {
+        if (GameController.Instance.PointerData != null)
+            return true;
+        else
+            return false;
+    }
     /// <summary>
     /// Positions the ring on this pin, if it can be positioned
     /// </summary>
@@ -108,7 +104,7 @@ public class RingDrop : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
             }
             else
             {
-                EventsManager.Events.PostNotification("IsOverPin", false);
+                GameController.Instance.IsOverPin = false;
             }
         }
         

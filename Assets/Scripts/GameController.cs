@@ -16,9 +16,13 @@ public class GameController : MonoBehaviour
 
     private List<GameObject> _mRings = new List<GameObject>();
     private bool _mOneRingIsDragged = false;
+    private bool _mIsOverPin = false;
+    private GameObject _mPointerData;
     private Dictionary<GameObject, GameObject> _mRingsPosition = new Dictionary<GameObject, GameObject>();
 
     public bool OneRingIsDragged { get { return _mOneRingIsDragged; } set { _mOneRingIsDragged = value; } }
+    public bool IsOverPin { get { return _mIsOverPin; } set { _mIsOverPin = value; } }
+    public GameObject PointerData { get { return _mPointerData; } set { _mPointerData = value; } }
 
     #region Private methods
 
@@ -33,7 +37,6 @@ public class GameController : MonoBehaviour
         EventsManager.Events.AddListener("OnBoardSetup", OnBoardSetup);
         EventsManager.Events.AddListener("OnCancelDragObject", OnCancelDragObject);
         EventsManager.Events.AddListener("CheckGameOver", CheckGameOver);
-        EventsManager.Events.AddListener("OnBeginDragObject", OnBeginDragObject);
         m_WiningPanel.SetActive(false);
     }
 
@@ -71,6 +74,9 @@ public class GameController : MonoBehaviour
             kvp.Key.GetComponent<Image>().raycastTarget = true;
             kvp.Key.GetComponent<RingBackRefference>().GetComponent<Image>().raycastTarget = true;
         }
+
+        GameController.Instance.IsOverPin = false;
+        GameController.Instance.OneRingIsDragged = false;
     }
 
     /// <summary>
@@ -110,15 +116,13 @@ public class GameController : MonoBehaviour
     }
 
     /// <summary>
-    /// Event for when an object starts being dragged
+    /// Disables the raycast on the rings already on pins
     /// </summary>
-    /// <param name="args"></param>
-    private void OnBeginDragObject(params object[] args)
+    public void DisableRaycastOnRings()
     {
-        GameObject ring = (GameObject)args[0];
         foreach (KeyValuePair<GameObject, GameObject> kvp in _mRingsPosition)
         {
-            if (kvp.Key != ring)
+            if (kvp.Key != PointerData)
             {
                 kvp.Key.GetComponent<Image>().raycastTarget = false;
                 kvp.Key.GetComponent<RingBackRefference>().GetComponent<Image>().raycastTarget = false;
