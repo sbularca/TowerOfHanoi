@@ -10,7 +10,7 @@ using UnityEngine.EventSystems;
 public class RingDrop : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler
 {
     private Animator _mAnimator;
-    private bool canBePositioned = true;
+    private bool canBePositioned = false;
 
     private void Start()
     {
@@ -24,7 +24,6 @@ public class RingDrop : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
     {
         if (PointerHasData())
         {
-            EventsManager.Events.AddListener("OnEndDragObject", OnEndDragObject);
             canBePositioned = GameController.Instance.CanBePositioned(GameController.Instance.PointerData, gameObject);
 
             if (canBePositioned)
@@ -45,7 +44,6 @@ public class RingDrop : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
         _mAnimator.SetBool("pinRed", false);
         GameController.Instance.IsOverPin = false;
         canBePositioned = true;
-        EventsManager.Events.RemoveListener("OnEndDragObject", OnEndDragObject);
     }
 
 
@@ -59,14 +57,11 @@ public class RingDrop : MonoBehaviour, IDropHandler, IPointerEnterHandler, IPoin
             _mAnimator.SetBool("pinGreen", false);
             _mAnimator.SetBool("pinRed", false);
             GameController.Instance.PointerData = null;
+
+            GameController.Instance.IsOverPin = false;
+            GameController.Instance.OneRingIsDragged = false;
         }
 
-    }
-
-    private void OnEndDragObject(params object[]args)
-    {
-        GameController.Instance.IsOverPin = false;
-        GameController.Instance.OneRingIsDragged = false;
     }
 
     private bool PointerHasData()

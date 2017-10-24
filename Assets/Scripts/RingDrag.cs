@@ -24,7 +24,7 @@ public class RingDrag : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
     private Vector3 _mFrontInitialPosition;
     private Vector3 _mBackInitialPosition;
     private Transform _mInitialParent;
-    private bool _mCanBePicked = true;
+    private bool _mCanBePicked = false;
 
 
     void Start()
@@ -105,13 +105,7 @@ public class RingDrag : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        if (GameController.Instance.OneRingIsDragged && !GameController.Instance.IsOverPin)
-            SetInitialPosition();
-        else
-            ConfirmPosition();
-
-        GameController.Instance.PointerData = null;
-        EventsManager.Events.PostNotification("OnEndDragObject");
+        StartCoroutine(UpdateRing());
     }
 
     /// <summary>
@@ -169,6 +163,24 @@ public class RingDrag : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
         _mDraggingIcons.Clear();
         _mDraggingPlanes.Clear();
         Destroy(GetComponent<CanvasGroup>());
+    }
+
+    IEnumerator UpdateRing()
+    {
+        while (true)
+        {
+            if (GameController.Instance.OneRingIsDragged && !GameController.Instance.IsOverPin)
+            {
+                SetInitialPosition();
+                yield return null;
+            }
+            else
+            {
+                ConfirmPosition();
+                yield break;
+            }
+                
+        }
     }
 
 }
